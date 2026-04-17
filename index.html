@@ -410,7 +410,7 @@ body{padding-bottom:90px}
   <div class="slip-sec">
     <div class="slip-lbl">Step 2 — แนบสลิปการโอน <span class="slip-req">*</span> <span style="font-size:9px;color:var(--sale);font-weight:400">(จำเป็น)</span></div>
     <div class="slip-box">
-      <input type="file" accept="image/*" capture="environment" id="slip-file" onchange="previewSlip(this)">
+      <input type="file" accept="image/*" id="slip-file" onchange="previewSlip(this)">
       <div class="slip-icon">📎</div>
       <div class="slip-txt">แตะเพื่อถ่ายภาพสลิป / เลือกรูป</div>
       <div class="slip-sub">Tap to take photo or choose from gallery</div>
@@ -920,15 +920,26 @@ function saveName(){
 }
 
 function showMemberResult(){
-  document.getElementById('pts-result').classList.add('show');
-  document.getElementById('pts-result-name').textContent=member.name||'สมาชิก';
-  document.getElementById('pts-result-pts').textContent=member.pts+' แต้ม';
-  document.getElementById('pts-result-orders').textContent=member.orders||0;
-  if(member.pts>=CFG.points.goal) document.getElementById('redeem-row').style.display='flex';
-  document.getElementById('pts-strip').classList.add('show');
-  document.getElementById('pts-name-hdr').textContent='สวัสดี '+(member.name||'สมาชิก');
-  document.getElementById('pts-count-hdr').textContent=member.pts+' / '+CFG.points.goal+' ☕';
-  document.getElementById('pts-fill-hdr').style.width=(member.pts/CFG.points.goal*100)+'%';
+  const r=document.getElementById('pts-result');
+  if(r) r.classList.add('show');
+  const rn=document.getElementById('pts-result-name');
+  if(rn) rn.textContent=member.name||'สมาชิก';
+  const rp=document.getElementById('pts-result-pts');
+  if(rp) rp.textContent=member.pts+' แต้ม';
+  const ro=document.getElementById('pts-result-orders');
+  if(ro) ro.textContent=member.orders||0;
+  if(member.pts>=CFG.points.goal){
+    const rr=document.getElementById('redeem-row');
+    if(rr) rr.style.display='flex';
+  }
+  const strip=document.getElementById('pts-strip');
+  if(strip) strip.classList.add('show');
+  const nh=document.getElementById('pts-name-hdr');
+  if(nh) nh.textContent='สวัสดี '+(member.name||'สมาชิก');
+  const ch=document.getElementById('pts-count-hdr');
+  if(ch) ch.textContent=member.pts+' / '+CFG.points.goal+' ☕';
+  const fh=document.getElementById('pts-fill-hdr');
+  if(fh) fh.style.width=(member.pts/CFG.points.goal*100)+'%';
 }
 
 /* ── PAYMENT ── */
@@ -1075,8 +1086,10 @@ async function submitOrder(){
 
 function showSuccess(data){
   const tot=cart.reduce((a,i)=>a+i.line,0);
-  document.getElementById('suc-num').textContent = data.order_id || '#----';
-  document.getElementById('suc-items').innerHTML=
+  const sucNum = document.getElementById('suc-num');
+  if(sucNum) sucNum.textContent = data.order_id || '#----';
+  const sucItems = document.getElementById('suc-items');
+  if(sucItems) sucItems.innerHTML=
     cart.map(i=>`<div class="oi"><div class="oi-icon">${i.icon}</div><div class="oi-info"><div class="oi-name">${i.th} × ${i.qty}</div><div class="oi-addon">${[i.sw,i.ic,...(i.tops||[])].filter(Boolean).join(' · ')||'-'}</div>${i.note?`<div class="oi-addon" style="color:var(--preorder);margin-top:2px">📝 ${i.note}</div>`:''}${i.preorder?`<div class="oi-pre">📦 รับ ${CFG.preorder.label}</div>`:''}</div><div class="oi-price">${i.isFree?'<span style="color:#D97706">ฟรี</span>':'฿'+i.line}</div></div>`).join('')+
     `<div style="display:flex;justify-content:space-between;padding:10px 0 0;border-top:1px dashed var(--border);margin-top:4px"><span style="font-size:13px;font-weight:500">รวม · Total</span><span style="font-size:16px;font-weight:600;color:var(--primary)">฿${tot}</span></div>`;
 
@@ -1088,13 +1101,13 @@ function showSuccess(data){
     const ptsBanner = document.getElementById('pts-earned');
     const ptsTxt    = document.getElementById('pts-earned-txt');
     const ptsSub    = document.getElementById('pts-earned-sub');
-    ptsBanner.style.display='flex';
+    if(ptsBanner) ptsBanner.style.display='flex';
     if(data.just_reached){
-      ptsTxt.textContent = `🎉 ครบ ${goal} แต้มแล้ว! แลกฟรีได้เลย!`;
-      ptsSub.textContent = `ครั้งหน้าแจ้งเบอร์เพื่อแลก ${CFG.points.reward}`;
+      if(ptsTxt) ptsTxt.textContent = `🎉 ครบ ${goal} แต้มแล้ว! แลกฟรีได้เลย!`;
+      if(ptsSub) ptsSub.textContent = `ครั้งหน้าแจ้งเบอร์เพื่อแลก ${CFG.points.reward}`;
     } else {
-      ptsTxt.textContent = `ได้รับ ${ptsEarned} แต้ม รวม ${ptsNow} / ${goal} แต้ม`;
-      ptsSub.textContent = `สะสมครบ ${goal} แต้ม รับฟรี 1 แก้ว!`;
+      if(ptsTxt) ptsTxt.textContent = `ได้รับ ${ptsEarned} แต้ม รวม ${ptsNow} / ${goal} แต้ม`;
+      if(ptsSub) ptsSub.textContent = `สะสมครบ ${goal} แต้ม รับฟรี 1 แก้ว!`;
     }
   }
   go('s-success');
