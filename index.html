@@ -71,7 +71,7 @@ body{padding-bottom:90px}
 .mth{font-size:13px;font-weight:600;color:#1A1A1A;line-height:1.25}
 .mdesc{display:none}
 .mfoot{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
-.price-wrap{display:flex;flex-direction:column;gap:1px}
+.price-wrap{display:flex;flex-direction:row;align-items:baseline;gap:5px}
 .mprice{font-size:15px;font-weight:600;color:#2D5A38;font-family:'Prompt',sans-serif}
 .mprice.sale{color:var(--sale)}
 .morig{font-size:10px;color:rgba(0,0,0,.35);text-decoration:line-through;font-weight:300}
@@ -90,10 +90,12 @@ body{padding-bottom:90px}
 .po-cutoff{background:rgba(0,0,0,.2);border-radius:8px;padding:6px 10px;text-align:center;flex-shrink:0}
 .po-cutoff-lbl{font-size:8px;color:rgba(255,255,255,.7);font-weight:300}
 .po-cutoff-val{font-size:11px;font-weight:600;color:#fff;margin-top:1px}
-.po-items{background:rgba(45,116,196,.06);border:1.5px solid rgba(45,116,196,.2);border-top:none;border-radius:0 0 14px 14px;padding:10px}
-.po-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-.po-scroll::-webkit-scrollbar{display:none}
-.po-card{flex:0 0 150px;border-radius:12px;overflow:hidden;border:none;cursor:pointer;transition:transform .15s;position:relative;height:185px}
+.po-items{background:rgba(45,116,196,.06);border:1.5px solid rgba(45,116,196,.2);border-top:none;border-radius:0 0 14px 14px;padding:10px;overflow:hidden}
+.po-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:rgba(45,116,196,.3) transparent}
+.po-scroll::-webkit-scrollbar{height:3px}
+.po-scroll::-webkit-scrollbar-thumb{background:rgba(45,116,196,.3);border-radius:3px}
+.po-scroll::-webkit-scrollbar-track{background:transparent}
+.po-card{flex:0 0 calc(50% - 12px);border-radius:12px;overflow:hidden;border:none;cursor:pointer;transition:transform .15s;position:relative;height:190px}
 .po-card:active{transform:scale(.97)}
 .po-img{position:absolute;inset:0;background:#EEF4FB;display:flex;align-items:center;justify-content:center;font-size:48px;overflow:hidden}
 .po-img img{width:100%;height:100%;object-fit:cover;display:block}
@@ -615,33 +617,32 @@ function renderPreorder(){
   if(!items.length){sec.innerHTML='';return;}
 
     const count = items.length;
-    const scrollMode = count > 2;
-    const cards=items.map(m=>{
-      const imgPart=m.img?`<img src="${m.img}" alt="" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.style.display='none'">`:'';
-      const pickup = m.pickup_date || CFG.preorder.label;
-      const cutoff = m.cutoff_date || CFG.preorder.cutoff;
-      const cardStyle = scrollMode ? 'flex:0 0 150px;height:185px' : 'height:185px';
-      return `<div class="po-card" onclick="openSheet(${m.id})" style="${cardStyle}">
-        <div class="po-img">${imgPart}<div class="po-img-fall">${m.icon}</div></div>
-        <div class="po-img-grad"></div>
-        <div class="po-badges">
-          <div class="po-date-badge">📦 รับ ${pickup}</div>
-          ${cutoff?`<div class="po-cutoff-badge">ปิดรับ ${cutoff}</div>`:''}
+  const scrollMode = count > 2;
+  const cards=items.map(m=>{
+    const imgPart=m.img?`<img src="${m.img}" alt="" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.style.display='none'">`:'';
+    const pickup = m.pickup_date || CFG.preorder.label;
+    const cutoff = m.cutoff_date || CFG.preorder.cutoff;
+    return `<div class="po-card" onclick="openSheet(${m.id})">
+      <div class="po-img">${imgPart}<div class="po-img-fall">${m.icon}</div></div>
+      <div class="po-img-grad"></div>
+      <div class="po-badges">
+        <div class="po-date-badge">📦 รับ ${pickup}</div>
+        ${cutoff?`<div class="po-cutoff-badge">ปิดรับ ${cutoff}</div>`:''}
+      </div>
+      <div class="po-body">
+        <div class="po-en">${m.en}</div>
+        <div class="po-th">${m.th}</div>
+        <div class="po-foot">
+          <div class="po-price">฿${m.price}</div>
+          <button class="po-add" onclick="event.stopPropagation();openSheet(${m.id})">+</button>
         </div>
-        <div class="po-body">
-          <div class="po-en">${m.en}</div>
-          <div class="po-th">${m.th}</div>
-          <div class="po-foot">
-            <div class="po-price">฿${m.price}</div>
-            <button class="po-add" onclick="event.stopPropagation();openSheet(${m.id})">+</button>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
+      </div>
+    </div>`;
+  }).join('');
 
-    const itemsHTML = scrollMode
-      ? `<div class="po-scroll">${cards}</div>`
-      : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${cards}</div>`;
+  const itemsHTML = scrollMode
+    ? `<div class="po-scroll">${cards}</div>`
+    : `<div style="display:flex;gap:8px">${cards}</div>`;
 
   sec.innerHTML=`<div class="po-section">
     <div class="po-header" style="padding:8px 14px 8px;border-radius:14px 14px 0 0">
