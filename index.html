@@ -530,7 +530,7 @@ let shopOpen = true; // อัพเดตจาก GAS ตอน init
    INIT — ดึง status จาก GAS ตอนโหลดหน้า
    ══════════════════════════════════════════════════════════════ */
 async function initApp(){
-  if(!GAS_URL || GAS_URL.includes('YOUR_GAS/macros/s/AKfycbw1ida_Eh0M9-Po7Lr0SFwihZNYKuOapo-K3k286fbACXXieo2o1svzdfKNvE8VL5du/exec') return; // ยังไม่ได้ตั้งค่า
+  if(!GAS_URL || GAS_URL.includes('YOUR_GAS')) return; // ยังไม่ได้ตั้งค่า
   try{
     const r = await fetch(GAS_URL + '?action=status');
     const s = await r.json();
@@ -1166,4 +1166,3 @@ function resetAll(){
 </script>
 </body>
 </html>
-
