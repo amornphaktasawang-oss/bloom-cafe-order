@@ -91,14 +91,17 @@ body{padding-bottom:90px}
 .po-cutoff-lbl{font-size:8px;color:rgba(255,255,255,.7);font-weight:300}
 .po-cutoff-val{font-size:11px;font-weight:600;color:#fff;margin-top:1px}
 .po-items{background:rgba(45,116,196,.06);border:1.5px solid rgba(45,116,196,.2);border-top:none;border-radius:0 0 14px 14px;padding:10px}
-.po-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.po-card{border-radius:12px;overflow:hidden;border:1.5px solid rgba(45,116,196,.2);cursor:pointer;transition:transform .15s;position:relative;height:160px}
+.po-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.po-scroll::-webkit-scrollbar{display:none}
+.po-card{flex:0 0 150px;border-radius:12px;overflow:hidden;border:none;cursor:pointer;transition:transform .15s;position:relative;height:185px}
 .po-card:active{transform:scale(.97)}
 .po-img{position:absolute;inset:0;background:#EEF4FB;display:flex;align-items:center;justify-content:center;font-size:48px;overflow:hidden}
 .po-img img{width:100%;height:100%;object-fit:cover;display:block}
 .po-img-fall{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:48px}
 .po-img-grad{position:absolute;bottom:0;left:0;right:0;height:70%;background:linear-gradient(to top,rgba(0,0,0,.45) 0%,rgba(0,0,0,.08) 60%,transparent 100%);pointer-events:none}
-.po-date-badge{position:absolute;top:8px;left:8px;background:var(--preorder);color:#fff;font-size:8px;font-weight:600;padding:3px 8px;border-radius:6px;z-index:3}
+.po-badges{position:absolute;top:6px;left:6px;display:flex;flex-direction:column;gap:3px;z-index:3}
+.po-date-badge{background:var(--preorder);color:#fff;font-size:7px;font-weight:600;padding:2px 6px;border-radius:5px;font-family:'Prompt',sans-serif;white-space:nowrap}
+.po-cutoff-badge{background:var(--sale);color:#fff;font-size:7px;font-weight:600;padding:2px 6px;border-radius:5px;font-family:'Prompt',sans-serif;white-space:nowrap}
 .po-body{position:absolute;bottom:0;left:0;right:0;border-radius:0 0 11px 11px;padding:8px 9px 9px;background:rgba(255,255,255,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:2}
 .po-en{font-size:9px;color:#1A3A6A;font-weight:400;margin-bottom:1px}
 .po-th{font-size:12px;font-weight:600;color:#1A1A1A;line-height:1.3}
@@ -507,8 +510,8 @@ const MENU = [
   {id:7,cat:'tea',en:'Hojicha Latte',th:'โฮจิฉะลาเต้',desc:'ชาอบ กลิ่นหอมควัน',icon:'🫖',img:'',price:70,origPrice:0,cost:24,sale:0,addon:['sweet','ice'],avail:true},
   {id:8,cat:'bakery',en:'Chocolate Cake',th:'เค้กช็อกโกแลต',desc:'ชุ่มฉ่ำ ละลายในปาก',icon:'🍰',img:'',price:85,origPrice:0,cost:30,sale:0,addon:[],avail:true},
   {id:9,cat:'bakery',en:'Butter Croissant',th:'บัตเตอร์ครัวซองต์',desc:'กรอบนอก นุ่มใน เนยหอม',icon:'🥐',img:'',price:65,origPrice:0,cost:20,sale:0,addon:[],avail:true},
-  {id:10,cat:'preorder',en:'Signature Box Set',th:'กล่องของขวัญ Set A',desc:'กาแฟ 2 ถุง + เค้ก 1 ชิ้น บรรจุกล่องสวยงาม',icon:'🎁',img:'',price:320,origPrice:0,cost:120,sale:0,addon:[],avail:true,preorder:true},
-  {id:11,cat:'preorder',en:'Matcha Cake (Whole)',th:'มัทฉะเค้กทั้งหน้า',desc:'เค้กมัทฉะญี่ปุ่น ขนาด 6 นิ้ว สั่งล่วงหน้า',icon:'🎂',img:'',price:480,origPrice:0,cost:180,sale:0,addon:[],avail:true,preorder:true},
+  {id:10,cat:'preorder',en:'Signature Box Set',th:'กล่องของขวัญ Set A',desc:'กาแฟ 2 ถุง + เค้ก 1 ชิ้น บรรจุกล่องสวยงาม',icon:'🎁',img:'',price:320,origPrice:0,cost:120,sale:0,addon:[],avail:true,preorder:true,pickup_date:'ศุกร์ 18 เม.ย.',cutoff_date:'พฤ. 17 เม.ย. 20:00'},
+  {id:11,cat:'preorder',en:'Matcha Cake (Whole)',th:'มัทฉะเค้กทั้งหน้า',desc:'เค้กมัทฉะญี่ปุ่น ขนาด 6 นิ้ว สั่งล่วงหน้า',icon:'🎂',img:'',price:480,origPrice:0,cost:180,sale:0,addon:[],avail:true,preorder:true,pickup_date:'เสาร์ 19 เม.ย.',cutoff_date:'ศุกร์ 18 เม.ย. 18:00'},
 ];
 
 const ADDONS = {
@@ -559,6 +562,25 @@ async function initApp(){
     shopOpen = s.open;
     if(!shopOpen) showClosed(s);
 
+    // ดึง menu จาก GAS (มี pickup_date, cutoff_date)
+    const mr = await fetch(GAS_URL + '?action=menu');
+    const md = await mr.json();
+    if(md.ok && md.menu && md.menu.length){
+      // merge ข้อมูลจาก Sheets เข้า MENU array (อัพเดต field ที่ config ได้)
+      md.menu.forEach(item => {
+        const idx = MENU.findIndex(m => m.id === item.id);
+        if(idx >= 0){
+          MENU[idx] = { ...MENU[idx], ...item };
+        } else {
+          // เมนูใหม่ที่เพิ่มใน Sheets แต่ไม่มีใน hardcode
+          MENU.push({ addon:[], preorder: item.cat==='preorder', ...item });
+        }
+      });
+      // ซ่อน item ที่ Sheets บอกว่า avail=false
+      renderPreorder();
+      renderMenu();
+    }
+
   }catch(e){ console.warn('initApp failed, using defaults:', e); }
 }
 
@@ -591,38 +613,43 @@ function renderPreorder(){
   const items=MENU.filter(m=>m.cat==='preorder'&&m.avail);
   const sec=document.getElementById('preorder-section');
   if(!items.length){sec.innerHTML='';return;}
-  const cards=items.map(m=>{
-    const imgPart=m.img?`<img src="${m.img}" alt="" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.style.display='none'">`:'';
-    return `<div class="po-card" onclick="openSheet(${m.id})">
-      <div class="po-img">${imgPart}<div class="po-img-fall">${m.icon}</div></div>
-      <div class="po-img-grad"></div>
-      <div class="po-date-badge">📦 รับ ${CFG.preorder.label}</div>
-      <div class="po-body">
-        <div class="po-en">${m.en}</div>
-        <div class="po-th">${m.th}</div>
-        <div class="po-foot">
-          <div class="po-price">฿${m.price}</div>
-          <button class="po-add" onclick="event.stopPropagation();openSheet(${m.id})">+</button>
+
+    const count = items.length;
+    const scrollMode = count > 2;
+    const cards=items.map(m=>{
+      const imgPart=m.img?`<img src="${m.img}" alt="" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.style.display='none'">`:'';
+      const pickup = m.pickup_date || CFG.preorder.label;
+      const cutoff = m.cutoff_date || CFG.preorder.cutoff;
+      const cardStyle = scrollMode ? 'flex:0 0 150px;height:185px' : 'height:185px';
+      return `<div class="po-card" onclick="openSheet(${m.id})" style="${cardStyle}">
+        <div class="po-img">${imgPart}<div class="po-img-fall">${m.icon}</div></div>
+        <div class="po-img-grad"></div>
+        <div class="po-badges">
+          <div class="po-date-badge">📦 รับ ${pickup}</div>
+          ${cutoff?`<div class="po-cutoff-badge">ปิดรับ ${cutoff}</div>`:''}
         </div>
-      </div>
-    </div>`;
-  }).join('');
+        <div class="po-body">
+          <div class="po-en">${m.en}</div>
+          <div class="po-th">${m.th}</div>
+          <div class="po-foot">
+            <div class="po-price">฿${m.price}</div>
+            <button class="po-add" onclick="event.stopPropagation();openSheet(${m.id})">+</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    const itemsHTML = scrollMode
+      ? `<div class="po-scroll">${cards}</div>`
+      : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${cards}</div>`;
+
   sec.innerHTML=`<div class="po-section">
-    <div class="po-header">
+    <div class="po-header" style="padding:8px 14px 8px;border-radius:14px 14px 0 0">
       <div class="po-header-left">
         <div class="po-title">📦 Pre-order</div>
-        <div class="po-sub">สั่งล่วงหน้า ${CFG.preorder.desc}<br>รับสินค้า: ${CFG.preorder.label}</div>
-        <div class="po-chips-row">
-          <span class="po-chip">จัดส่ง / รับที่ร้าน</span>
-          <span class="po-chip">จำนวนจำกัด</span>
-        </div>
-      </div>
-      <div class="po-cutoff">
-        <div class="po-cutoff-lbl">หยุดรับออเดอร์</div>
-        <div class="po-cutoff-val">พฤ. 20:00</div>
       </div>
     </div>
-    <div class="po-items"><div class="po-grid">${cards}</div></div>
+    <div class="po-items">${itemsHTML}</div>
   </div>`;
 }
 
@@ -799,7 +826,7 @@ function renderCheckout(){
         <div class="oi-addon">${[i.sw,i.ic,...(i.tops||[])].filter(Boolean).join(' · ')||'-'}</div>
         ${i.note?`<div class="oi-addon" style="color:var(--preorder);margin-top:2px">📝 ${i.note}</div>`:''}
         ${i.isFree?`<div style="font-size:9px;color:#D97706;font-weight:600;margin-top:2px">🎁 แลกฟรี</div>`:''}
-        ${i.preorder?`<div class="oi-pre">📦 Pre-order — รับ ${CFG.preorder.label}</div>`:''}
+        ${i.preorder?`<div class="oi-pre">📦 Pre-order — รับ ${i.pickup_date||CFG.preorder.label}</div>`:''}
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
         <div class="oi-price">฿${i.line}</div>
@@ -1090,7 +1117,7 @@ function showSuccess(data){
   if(sucNum) sucNum.textContent = data.order_id || '#----';
   const sucItems = document.getElementById('suc-items');
   if(sucItems) sucItems.innerHTML=
-    cart.map(i=>`<div class="oi"><div class="oi-icon">${i.icon}</div><div class="oi-info"><div class="oi-name">${i.th} × ${i.qty}</div><div class="oi-addon">${[i.sw,i.ic,...(i.tops||[])].filter(Boolean).join(' · ')||'-'}</div>${i.note?`<div class="oi-addon" style="color:var(--preorder);margin-top:2px">📝 ${i.note}</div>`:''}${i.preorder?`<div class="oi-pre">📦 รับ ${CFG.preorder.label}</div>`:''}</div><div class="oi-price">${i.isFree?'<span style="color:#D97706">ฟรี</span>':'฿'+i.line}</div></div>`).join('')+
+    cart.map(i=>`<div class="oi"><div class="oi-icon">${i.icon}</div><div class="oi-info"><div class="oi-name">${i.th} × ${i.qty}</div><div class="oi-addon">${[i.sw,i.ic,...(i.tops||[])].filter(Boolean).join(' · ')||'-'}</div>${i.note?`<div class="oi-addon" style="color:var(--preorder);margin-top:2px">📝 ${i.note}</div>`:''}${i.preorder?`<div class="oi-pre">📦 รับ ${i.pickup_date||CFG.preorder.label}</div>`:''}</div><div class="oi-price">${i.isFree?'<span style="color:#D97706">ฟรี</span>':'฿'+i.line}</div></div>`).join('')+
     `<div style="display:flex;justify-content:space-between;padding:10px 0 0;border-top:1px dashed var(--border);margin-top:4px"><span style="font-size:13px;font-weight:500">รวม · Total</span><span style="font-size:16px;font-weight:600;color:var(--primary)">฿${tot}</span></div>`;
 
   // แสดงแต้ม
