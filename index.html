@@ -292,7 +292,7 @@ body{padding-bottom:90px}
   </div>
 
   <div id="preorder-section"></div>
-  <div id="menu-wrap"></div>
+  <div id="menu-wrap"><div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:14px">กำลังโหลดเมนู...</div></div>
 
   <div class="cart-bar">
     <div class="cart-inner" id="cart-inner">
@@ -502,19 +502,8 @@ let CFG = {
   preorder:{ label:'ศุกร์ 18 เม.ย.', cutoff:'พฤหัส 17 เม.ย. 20:00', desc:'สั่งวันนี้ รับวันศุกร์ 18 เม.ย.' }
 };
 
-const MENU = [
-  {id:1,cat:'coffee',en:'Latte',th:'ลาเต้',desc:'กาแฟนุ่มลิ้น หอมกลิ่นนม เข้มกำลังดี',icon:'☕',img:'',price:65,origPrice:0,cost:22,sale:0,addon:['sweet','ice','topping'],avail:true},
-  {id:2,cat:'coffee',en:'Americano',th:'อเมริกาโน่',desc:'เข้มข้น สดชื่น คลาสสิก',icon:'🖤',img:'',price:45,origPrice:55,cost:15,sale:18,addon:['sweet','ice'],avail:true},
-  {id:3,cat:'coffee',en:'Cappuccino',th:'คาปูชิโน่',desc:'โฟมนมนุ่ม สมดุลพอดี',icon:'🫧',img:'',price:70,origPrice:0,cost:25,sale:0,addon:['sweet','topping'],avail:true},
-  {id:4,cat:'coffee',en:'Cold Brew',th:'โคลด์บรู',desc:'หมักเย็น 12 ชม. รสเข้มนุ่ม',icon:'🧊',img:'',price:75,origPrice:0,cost:20,sale:0,addon:['sweet','topping'],avail:false},
-  {id:5,cat:'tea',en:'Matcha Latte',th:'มัทฉะลาเต้',desc:'มัทฉะญี่ปุ่นแท้ หอมเขียวสด',icon:'🍵',img:'',price:75,origPrice:0,cost:28,sale:0,addon:['sweet','ice','topping'],avail:true},
-  {id:6,cat:'tea',en:'Thai Milk Tea',th:'ชาไทย',desc:'ชาไทยดั้งเดิม หอมหวาน',icon:'🧋',img:'',price:50,origPrice:60,cost:14,sale:17,addon:['sweet','ice'],avail:true},
-  {id:7,cat:'tea',en:'Hojicha Latte',th:'โฮจิฉะลาเต้',desc:'ชาอบ กลิ่นหอมควัน',icon:'🫖',img:'',price:70,origPrice:0,cost:24,sale:0,addon:['sweet','ice'],avail:true},
-  {id:8,cat:'bakery',en:'Chocolate Cake',th:'เค้กช็อกโกแลต',desc:'ชุ่มฉ่ำ ละลายในปาก',icon:'🍰',img:'',price:85,origPrice:0,cost:30,sale:0,addon:[],avail:true},
-  {id:9,cat:'bakery',en:'Butter Croissant',th:'บัตเตอร์ครัวซองต์',desc:'กรอบนอก นุ่มใน เนยหอม',icon:'🥐',img:'',price:65,origPrice:0,cost:20,sale:0,addon:[],avail:true},
-  {id:10,cat:'preorder',en:'Signature Box Set',th:'กล่องของขวัญ Set A',desc:'กาแฟ 2 ถุง + เค้ก 1 ชิ้น บรรจุกล่องสวยงาม',icon:'🎁',img:'',price:320,origPrice:0,cost:120,sale:0,addon:[],avail:true,preorder:true,pickup_date:'ศุกร์ 18 เม.ย.',cutoff_date:'พฤ. 17 เม.ย. 20:00'},
-  {id:11,cat:'preorder',en:'Matcha Cake (Whole)',th:'มัทฉะเค้กทั้งหน้า',desc:'เค้กมัทฉะญี่ปุ่น ขนาด 6 นิ้ว สั่งล่วงหน้า',icon:'🎂',img:'',price:480,origPrice:0,cost:180,sale:0,addon:[],avail:true,preorder:true,pickup_date:'เสาร์ 19 เม.ย.',cutoff_date:'ศุกร์ 18 เม.ย. 18:00'},
-];
+// MENU ดึงจาก Google Sheets ทั้งหมด — แก้ที่ Sheets ที่เดียว app อัปเดตทันที
+let MENU = [];
 
 const ADDONS = {
   sweet:['ไม่หวาน 0%','หวานน้อย 25%','หวานปกติ 100%','หวานมาก 125%'],
@@ -688,9 +677,8 @@ function cardHTML(m){
   </div>`;
 }
 
-renderPreorder();
-renderMenu();
-initApp(); // 🌿 เชื่อมต่อ GAS
+// ไม่ render ทันที — รอ initApp ดึง MENU จาก Sheets ก่อน
+initApp(); // 🌿 เชื่อมต่อ GAS → ดึง MENU → render
 
 /* ── SWIPE DOWN TO CLOSE SHEET ── */
 (function(){
