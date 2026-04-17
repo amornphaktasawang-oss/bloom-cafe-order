@@ -147,10 +147,10 @@ body{padding-bottom:90px}
 .phone-card{margin:12px 16px 0;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px}
 .phone-card-lbl{font-size:11px;font-weight:500;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .phone-opt{font-size:9px;color:var(--hint);font-weight:300}
-.phone-row{display:flex;gap:8px}
-.phone-input{flex:1;background:var(--light);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;font-family:'Prompt',sans-serif;color:var(--text);outline:none}
+.phone-row{display:flex;gap:8px;align-items:stretch}
+.phone-input{flex:1;min-width:0;background:var(--light);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;font-family:'Prompt',sans-serif;color:var(--text);outline:none}
 .phone-input:focus{border-color:var(--primary)}
-.phone-btn{background:var(--btn);color:#fff;border:none;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Prompt',sans-serif;white-space:nowrap}
+.phone-btn{flex-shrink:0;background:var(--btn);color:#fff;border:none;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Prompt',sans-serif;white-space:nowrap}
 .pts-result{margin-top:10px;display:none}
 .pts-result.show{display:block}
 .pts-result-inner{background:var(--light);border-radius:10px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between}
@@ -215,7 +215,7 @@ body{padding-bottom:90px}
 /* SHEET */
 .sh-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
 .sh-ov.open{opacity:1;pointer-events:all}
-.sh{background:var(--surface);border-radius:22px 22px 0 0;width:100%;max-width:430px;max-height:88vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.sh{background:var(--surface);border-radius:22px 22px 0 0;width:100%;max-width:430px;max-height:88vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);touch-action:pan-y}
 .sh-ov.open .sh{transform:translateY(0)}
 .sh-handle{width:38px;height:4px;border-radius:2px;background:var(--border);margin:12px auto 0}
 .sh-img{width:100%;height:160px;background:var(--light);display:flex;align-items:center;justify-content:center;margin-top:12px;position:relative;overflow:hidden}
@@ -639,6 +639,41 @@ function cardHTML(m){
 renderPreorder();
 renderMenu();
 initApp(); // 🌿 เชื่อมต่อ GAS
+
+/* ── SWIPE DOWN TO CLOSE SHEET ── */
+(function(){
+  const ov = document.getElementById('sh-ov');
+  const sh = ov.querySelector('.sh');
+  let startY = 0, startScroll = 0, dragging = false;
+
+  sh.addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY;
+    startScroll = sh.scrollTop;
+    dragging = false;
+  }, { passive: true });
+
+  sh.addEventListener('touchmove', e => {
+    const dy = e.touches[0].clientY - startY;
+    // เลื่อนลงได้เฉพาะตอน sheet อยู่บนสุดแล้ว
+    if (dy > 0 && sh.scrollTop <= 0) {
+      dragging = true;
+      sh.style.transition = 'none';
+      sh.style.transform = `translateY(${dy}px)`;
+    }
+  }, { passive: true });
+
+  sh.addEventListener('touchend', e => {
+    const dy = e.changedTouches[0].clientY - startY;
+    sh.style.transition = '';
+    if (dragging && dy > 80) {
+      // swipe ลงเกิน 80px → ปิด
+      closeSheet({ target: ov });
+    } else {
+      sh.style.transform = '';
+    }
+    dragging = false;
+  }, { passive: true });
+})();
 
 function filterTab(el,cat){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
