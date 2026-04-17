@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Bloom Café</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -666,7 +669,7 @@ initApp(); // 🌿 เชื่อมต่อ GAS
     const dy = e.changedTouches[0].clientY - startY;
     sh.style.transition = '';
     if (dragging && dy > 80) {
-      // swipe ลงเกิน 80px → ปิด
+      sh.style.transform = '';
       closeSheet({ target: ov });
     } else {
       sh.style.transform = '';
@@ -686,6 +689,11 @@ function filterTab(el,cat){
 function openSheet(id){
   cur=MENU.find(m=>m.id===id); sw='หวานปกติ 100%'; ic='น้ำแข็งปกติ'; tops=[]; qty=1;
   document.getElementById('sh-note').value='';
+  // reset transform ก่อนเปิดทุกครั้ง (แก้ bug swipe แล้วเปิดใหม่)
+  const sh=document.querySelector('.sh');
+  sh.style.transition='none';
+  sh.style.transform='';
+  requestAnimationFrame(()=>{ sh.style.transition=''; });
   const ph=document.getElementById('sh-img-photo');
   const fb=document.getElementById('sh-img-fall');
   if(cur.img){ph.src=cur.img;ph.style.display='block';fb.style.display='none';}
@@ -700,6 +708,8 @@ function openSheet(id){
 }
 function closeSheet(e){
   if(e&&e.target!==document.getElementById('sh-ov'))return;
+  const sh=document.querySelector('.sh');
+  sh.style.transform='';
   document.getElementById('sh-ov').classList.remove('open');
   document.body.style.overflow='';
 }
@@ -746,9 +756,16 @@ function go(id){
 }
 
 /* ── CHECKOUT ── */
+function removeItem(idx){
+  cart.splice(idx,1);
+  updateCartBar();
+  if(cart.length===0){ go('s-menu'); return; }
+  renderCheckout();
+}
+
 function renderCheckout(){
   const tot=cart.reduce((a,i)=>a+i.line,0);
-  document.getElementById('co-items').innerHTML=cart.map(i=>`
+  document.getElementById('co-items').innerHTML=cart.map((i,idx)=>`
     <div class="oi">
       <div class="oi-icon">${i.icon}</div>
       <div class="oi-info">
@@ -758,7 +775,10 @@ function renderCheckout(){
         ${i.isFree?`<div style="font-size:9px;color:#D97706;font-weight:600;margin-top:2px">🎁 แลกฟรี</div>`:''}
         ${i.preorder?`<div class="oi-pre">📦 Pre-order — รับ ${CFG.preorder.label}</div>`:''}
       </div>
-      <div class="oi-price">฿${i.line}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+        <div class="oi-price">฿${i.line}</div>
+        <button onclick="removeItem(${idx})" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--hint);padding:0;line-height:1" title="ลบรายการนี้">✕</button>
+      </div>
     </div>`).join('');
   document.getElementById('co-total').textContent='฿'+tot;
   document.getElementById('co-total').className='total-amt';
