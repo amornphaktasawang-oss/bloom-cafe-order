@@ -349,7 +349,6 @@ body{padding-bottom:90px}
     <div id="pts-eligible-note" style="display:none;background:#FFF9C4;border-radius:8px;padding:7px 10px;margin-bottom:8px;font-size:10px;color:#856404;font-weight:400">
       ☕ ออเดอร์นี้ไม่มีกาแฟ/ชา — ไม่ได้รับแต้มสะสม
     </div>
-    <div class="phone-card-lbl">สะสมแต้ม · Collect Points <span class="phone-opt">(ไม่บังคับ)</span></div>
     <div class="phone-row">
       <input class="phone-input" id="phone-in" type="tel" placeholder="เบอร์โทรศัพท์" maxlength="10" inputmode="numeric">
       <button class="phone-btn" onclick="lookupPhone()">ตรวจสอบ</button>
@@ -809,16 +808,20 @@ function renderCheckout(){
     </div>`).join('');
   document.getElementById('co-total').textContent='฿'+tot;
   document.getElementById('co-total').className='total-amt';
-  document.getElementById('qr-amt').textContent='฿'+tot;
+  const qrAmt = document.getElementById('qr-amt');
+  if(qrAmt) qrAmt.textContent='฿'+tot;
 
   // แสดง/ซ่อน section สะสมแต้ม
   const eligible = hasEligibleItems();
-  document.getElementById('pts-card').style.display = eligible ? 'block' : 'none';
-  if(!eligible){
-    // ซ่อน redeem ด้วยถ้าไม่มี eligible items
-    document.getElementById('redeem-row').style.display='none';
-  } else if(member&&member.pts>=CFG.points.goal&&!redeemed){
-    document.getElementById('redeem-row').style.display='flex';
+  const ptsCard = document.getElementById('pts-card');
+  if(ptsCard) ptsCard.style.display = eligible ? 'block' : 'none';
+  const redeemRow = document.getElementById('redeem-row');
+  if(redeemRow){
+    if(!eligible){
+      redeemRow.style.display='none';
+    } else if(member&&member.pts>=CFG.points.goal&&!redeemed){
+      redeemRow.style.display='flex';
+    }
   }
 }
 let redeemItem=null, redeemSw='หวานปกติ 100%', redeemIc='น้ำแข็งปกติ', redeemTops=[];
@@ -939,8 +942,16 @@ function selPay(m){
   document.getElementById('chk-cash').textContent=m==='cash'?'✓':'';
 }
 function toPayment(){
-  if(payM==='qr')go('s-qr');
-  else submitOrder();
+  if(payM==='qr'){
+    // reset button ก่อนไปหน้า QR ทุกครั้ง
+    const btn=document.getElementById('submit-btn');
+    btn.disabled=true;
+    btn.classList.remove('ready');
+    btn.textContent='ส่งออเดอร์ · Place Order';
+    go('s-qr');
+  } else {
+    submitOrder();
+  }
 }
 
 /* ── SLIP ── */
@@ -1007,36 +1018,38 @@ async function submitOrder(){
 
   try{
     if(!GAS_URL || GAS_URL.includes('YOUR_GAS')){
-      // DEV MODE — ไม่มี GAS แสดง success ปลอม
       showSuccess({ ok:true, order_id:'#'+Math.floor(1000+Math.random()*9000), points_earned:0, points_now:0, points_goal:CFG.points.goal, just_reached:false });
       return;
     }
 
-    // Step 1: POST แบบ no-cors (ส่งข้อมูลไป GAS โดยไม่ติด CORS)
-    await fetch(GAS_URL, {
-      method: 'POST',
-      mode:   'no-cors',
-      headers:{ 'Content-Type': 'text/plain' },
-      body:   JSON.stringify(payload)
+    // คำนวณแต้มใน browser ก่อน ป้องกัน JSON encoding issues ใน GAS
+    const eligibleCats = CFG.points.eligible || ['coffee','tea'];
+    const pointsCount = cart.filter(i => eligibleCats.includes(i.cat) && !i.isFree)
+                            .reduce((sum,i) => sum + (i.qty||1), 0);
+
+    // GET request — ไม่มี CORS preflight เลย การันตี work กับ GAS
+    const orderParams = new URLSearchParams({
+      action:       'submitOrder',
+      phone:        payload.phone   || '',
+      name:         payload.name    || '',
+      items:        JSON.stringify(payload.items),
+      points_count: String(pointsCount),
+      total:        String(payload.total),
+      payment:      payload.payment || 'cash',
+      is_redeem:    String(payload.is_redeem || false),
+      has_slip:     slipData ? 'true' : 'false',
+      note:         payload.note    || ''
     });
 
-    // Step 2: รอ GAS ประมวลผล แล้ว GET เพื่อ confirm + รับ order_id / points
-    await new Promise(r => setTimeout(r, 1800));
-    const phone = payload.phone || '';
-    const confirmUrl = GAS_URL
-      + '?action=lastOrder'
-      + (phone ? '&phone=' + encodeURIComponent(phone) : '');
-    const cr = await fetch(confirmUrl);
-    const data = await cr.json();
-
-    if(data.ok){
+    const r = await fetch(GAS_URL + '?' + orderParams.toString());
+    const data = await r.json();
+    if(!data.ok){
       if(data.error==='shop_closed'){ showClosed(); btn.disabled=false; btn.textContent='ส่งออเดอร์ · Place Order'; return; }
-      showSuccess(data);
-    } else {
-      // GAS ตอบกลับ error
       alert(data.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
       btn.disabled=false; btn.textContent='ส่งออเดอร์ · Place Order';
+      return;
     }
+    showSuccess(data);
   }catch(e){
     alert('ไม่สามารถส่งออเดอร์ได้\nกรุณาตรวจสอบการเชื่อมต่อแล้วลองใหม่');
     btn.disabled=false; btn.textContent='ส่งออเดอร์ · Place Order';
@@ -1077,13 +1090,18 @@ function resetAll(){
   document.getElementById('name-in').value='';
   document.getElementById('pts-new').style.display='none';
   document.getElementById('pts-result').classList.remove('show');
-  document.getElementById('redeem-row').style.display='none';
-  document.getElementById('redeem-sheet').style.display='none';
+  const redeemRow=document.getElementById('redeem-row');
+  if(redeemRow) redeemRow.style.display='none';
+  const redeemSheet=document.getElementById('redeem-sheet');
+  if(redeemSheet) redeemSheet.style.display='none';
   document.getElementById('slip-file').value='';
   document.getElementById('slip-prev').classList.remove('show');
   document.getElementById('slip-ok').classList.remove('show');
+  // reset submit button ให้ครบทุก state
   const btn=document.getElementById('submit-btn');
-  btn.disabled=true;btn.classList.remove('ready');
+  btn.disabled=true;
+  btn.classList.remove('ready');
+  btn.textContent='ส่งออเดอร์ · Place Order';
   updateCartBar();
   go('s-menu');
 }
