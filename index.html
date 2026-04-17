@@ -541,7 +541,7 @@ async function initApp(){
     shopOpen = s.open;
     if(!shopOpen) showClosed(s);
 
-  }catch(e){ /* fallback ใช้ค่า default */ }
+  }catch(e){ console.warn('initApp failed, using defaults:', e); }
 }
 
 function showClosed(s){
@@ -561,8 +561,11 @@ function showClosed(s){
   document.querySelector('.cart-bar').style.display  = 'none';
   // เปลี่ยน dot เป็น ปิด
   const dot = document.querySelector('.open-dot');
-  if(dot){ dot.textContent='ปิดแล้ว'; dot.style.color='#FCA5A5'; }
-  dot.style.setProperty('--dot-color','#EF4444');
+  if(dot){
+    dot.textContent='ปิดแล้ว';
+    dot.style.color='#FCA5A5';
+    dot.style.setProperty('--dot-color','#EF4444');
+  }
 }
 
 /* ── RENDER ── */
@@ -850,7 +853,7 @@ async function lookupPhone(){
   btn.textContent='⏳'; btn.disabled=true;
 
   try{
-    if(GAS_URL !== 'https://script.google.com/macros/s/AKfycbw1ida_Eh0M9-Po7Lr0SFwihZNYKuOapo-K3k286fbACXXieo2o1svzdfKNvE8VL5du/exec'){
+    if(GAS_URL && !GAS_URL.includes('YOUR_GAS')){
       const r = await fetch(GAS_URL + '?action=member&phone=' + encodeURIComponent(ph));
       const data = await r.json();
       if(data.found){
@@ -972,7 +975,7 @@ async function submitOrder(){
   };
 
   try{
-    if(GAS_URL === 'https://script.google.com/macros/s/AKfycbw1ida_Eh0M9-Po7Lr0SFwihZNYKuOapo-K3k286fbACXXieo2o1svzdfKNvE8VL5du/exec'){
+    if(!GAS_URL || GAS_URL.includes('YOUR_GAS')){
       // DEV MODE — ไม่มี GAS แสดง success ปลอม
       showSuccess({ ok:true, order_id:'#'+Math.floor(1000+Math.random()*9000), points_earned:0, points_now:0, points_goal:CFG.points.goal, just_reached:false });
       return;
