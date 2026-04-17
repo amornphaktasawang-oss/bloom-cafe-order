@@ -980,20 +980,32 @@ async function submitOrder(){
       showSuccess({ ok:true, order_id:'#'+Math.floor(1000+Math.random()*9000), points_earned:0, points_now:0, points_goal:CFG.points.goal, just_reached:false });
       return;
     }
-    const r = await fetch(GAS_URL, {
-      method:'POST',
-      redirect:'follow',
-      headers:{'Content-Type':'text/plain'},
-      body: JSON.stringify(payload)
+
+    // Step 1: POST แบบ no-cors (ส่งข้อมูลไป GAS โดยไม่ติด CORS)
+    await fetch(GAS_URL, {
+      method: 'POST',
+      mode:   'no-cors',
+      headers:{ 'Content-Type': 'text/plain' },
+      body:   JSON.stringify(payload)
     });
-    const data = await r.json();
-    if(!data.ok){
-      if(data.error==='shop_closed'){ showClosed(); }
-      else alert(data.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
+
+    // Step 2: รอ GAS ประมวลผล แล้ว GET เพื่อ confirm + รับ order_id / points
+    await new Promise(r => setTimeout(r, 1800));
+    const phone = payload.phone || '';
+    const confirmUrl = GAS_URL
+      + '?action=lastOrder'
+      + (phone ? '&phone=' + encodeURIComponent(phone) : '');
+    const cr = await fetch(confirmUrl);
+    const data = await cr.json();
+
+    if(data.ok){
+      if(data.error==='shop_closed'){ showClosed(); btn.disabled=false; btn.textContent='ส่งออเดอร์ · Place Order'; return; }
+      showSuccess(data);
+    } else {
+      // GAS ตอบกลับ error
+      alert(data.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
       btn.disabled=false; btn.textContent='ส่งออเดอร์ · Place Order';
-      return;
     }
-    showSuccess(data);
   }catch(e){
     alert('ไม่สามารถส่งออเดอร์ได้\nกรุณาตรวจสอบการเชื่อมต่อแล้วลองใหม่');
     btn.disabled=false; btn.textContent='ส่งออเดอร์ · Place Order';
