@@ -1051,7 +1051,7 @@ async function submitOrder(){
     }
     showSuccess(data);
   }catch(e){
-    alert('ไม่สามารถส่งออเดอร์ได้\nกรุณาตรวจสอบการเชื่อมต่อแล้วลองใหม่');
+    alert('Error: ' + e.message + '\n\nกรุณาแจ้ง error นี้ให้ผู้ดูแลระบบ');
     btn.disabled=false; btn.textContent='ส่งออเดอร์ · Place Order';
   }
 }
