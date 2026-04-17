@@ -982,6 +982,8 @@ async function submitOrder(){
     }
     const r = await fetch(GAS_URL, {
       method:'POST',
+      redirect:'follow',
+      headers:{'Content-Type':'text/plain'},
       body: JSON.stringify(payload)
     });
     const data = await r.json();
