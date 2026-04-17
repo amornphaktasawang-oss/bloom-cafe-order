@@ -433,7 +433,7 @@ body{padding-bottom:90px}
     </div>
     <div class="pts-earned" id="pts-earned" style="display:none">
       <div class="pts-earned-icon">⭐</div>
-      <div><div class="pts-earned-txt" id="pts-earned-txt">ได้รับ 1 แต้ม รวม 8/10</div><div class="pts-earned-sub">สะสมครบ 10 แต้ม รับฟรี 1 แก้ว!</div></div>
+      <div><div class="pts-earned-txt" id="pts-earned-txt">ได้รับ 1 แต้ม รวม 8/10</div><div class="pts-earned-sub" id="pts-earned-sub">สะสมครบ 10 แต้ม รับฟรี 1 แก้ว!</div></div>
     </div>
     <div class="suc-items" id="suc-items"></div>
     <button class="new-btn" onclick="resetAll()">สั่งใหม่ · New Order</button>
@@ -1041,8 +1041,25 @@ async function submitOrder(){
       note:         payload.note    || ''
     });
 
-    const r = await fetch(GAS_URL + '?' + orderParams.toString());
-    const data = await r.json();
+    let data;
+    try{
+      const r = await fetch(GAS_URL + '?' + orderParams.toString());
+      const text = await r.text();
+      data = JSON.parse(text);
+    }catch(fetchErr){
+      // JSON parse fail → GAS อาจ process แล้วแต่ response มีปัญหา
+      // ลอง verify ว่า order ถูกบันทึกหรือเปล่า
+      await new Promise(r => setTimeout(r, 2000));
+      try{
+        const phone = payload.phone || '';
+        const vr = await fetch(GAS_URL + '?action=lastOrder' + (phone ? '&phone=' + encodeURIComponent(phone) : ''));
+        data = await vr.json();
+        if(!data.ok || !data.order_id) throw new Error('Order not found');
+      }catch(verifyErr){
+        throw fetchErr; // ไม่พบออเดอร์จริงๆ → แสดง error
+      }
+    }
+
     if(!data.ok){
       if(data.error==='shop_closed'){ showClosed(); btn.disabled=false; btn.textContent='ส่งออเดอร์ · Place Order'; return; }
       alert(data.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
@@ -1051,8 +1068,8 @@ async function submitOrder(){
     }
     showSuccess(data);
   }catch(e){
-    alert('Error: ' + e.message + '\n\nกรุณาแจ้ง error นี้ให้ผู้ดูแลระบบ');
-    btn.disabled=false; btn.textContent='ส่งออเดอร์ · Place Order';
+    alert('ไม่สามารถส่งออเดอร์ได้\nกรุณาตรวจสอบการเชื่อมต่อแล้วลองใหม่');
+    if(btn){ btn.disabled=false; btn.textContent='ส่งออเดอร์ · Place Order'; }
   }
 }
 
